@@ -477,6 +477,25 @@
             font-weight: 500;
         }
 
+        /* 期限切れタスクのスタイル */
+        .expired .task-date {
+            color: var(--danger-color);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .expired .task-date::after {
+            content: "🔥";
+            animation: flame 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes flame {
+            from { transform: scale(1); }
+            to { transform: scale(1.2); }
+        }
+
         /* タスクカウンターのスタイル更新 */
         .task-count {
             background: var(--card-color);
@@ -884,17 +903,16 @@
             li.setAttribute('data-priority', priority);
             
             if (completed) li.classList.add('completed');
-            if (dueDate && new Date(dueDate) < new Date().setHours(0, 0, 0, 0)) {
-                li.classList.add('expired');
-            }
             
-            // 今日期限のタスクにクラスを追加
-            if (dueDate) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const taskDate = new Date(dueDate);
+            // 期限切れの判定を更新
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const taskDate = dueDate ? new Date(dueDate) : null;
+            if (taskDate) {
                 taskDate.setHours(0, 0, 0, 0);
-                if (taskDate.getTime() === today.getTime()) {
+                if (taskDate < today) {
+                    li.classList.add('expired');
+                } else if (taskDate.getTime() === today.getTime()) {
                     li.classList.add('due-today');
                 }
             }
