@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シンプルTODOリスト</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --accent-color: #c4b5fd;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --text-color: #1f2937;
+            --text-light: #6b7280;
+            --bg-color: #f8fafc;
+            --card-color: #ffffff;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --radius: 16px;
+            --radius-sm: 8px;
+            --header-height: 60px;
+            --max-width: 1000px;
+            --transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #818cf8;
+            --primary-light: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent-color: #7c3aed;
+            --danger-color: #dc2626;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --text-color: #f3f4f6;
+            --text-light: #9ca3af;
+            --bg-color: #111827;
+            --card-color: #1f2937;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--card-color);
+            height: var(--header-height);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 2rem;
+        }
+
+        .header-content {
+            width: 100%;
+            max-width: var(--max-width);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+
+        .theme-toggle {
+            padding: 0.8rem;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1.2rem;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(0, 0, 0, 0.1);
+            transform: rotate(360deg);
+        }
+
+        .container {
+            max-width: var(--max-width);
+            margin: calc(var(--header-height) + 2rem) auto 2rem;
+            padding: 0 2rem;
+            width: 100%;
+        }
+
+        .input-container {
+            background: var(--card-color);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .input-container:focus-within {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .input-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .required-field::after {
+            content: "*";
+            color: var(--danger-color);
+            margin-left: 0.2rem;
+        }
+
+        input, select {
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-sm);
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: inherit;
+            background: var(--bg-color);
+            color: var(--text-color);
+            width: 100%;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            background: var(--card-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .priority-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .priority-radio {
+            display: none;
+        }
+
+        .priority-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem;
+            border-radius: var(--radius-sm);
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .priority-radio:checked + .priority-label {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .priority-radio[value="high"] + .priority-label:hover {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .priority-radio[value="medium"] + .priority-label:hover {
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .priority-radio[value="low"] + .priority-label:hover {
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .priority-radio[value="high"]:checked + .priority-label {
+            background: var(--danger-color);
+            border-color: var(--danger-color);
+            color: white;
+        }
+
+        .priority-radio[value="medium"]:checked + .priority-label {
+            background: var(--warning-color);
+            border-color: var(--warning-color);
+            color: white;
+        }
+
+        .priority-radio[value="low"]:checked + .priority-label {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .add-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .add-btn:active {
+            transform: translateY(0);
+        }
+
+        .toolbar {
+            background: var(--card-color);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-input {
+            padding-left: 2.8rem;
+            width: 100%;
+            background: var(--bg-color);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 1.2rem;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        select {
+            padding: 0.8rem 2.5rem 0.8rem 1rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5rem;
+            min-width: 140px;
+            max-width: 200px;
+        }
+
+        #todoList {
+            list-style: none;
+            perspective: 1000px;
+        }
+
+        #todoList li {
+            background: var(--card-color);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            transition: var(--transition), height 0.3s ease;
+            position: relative;
+            animation: slideIn 0.3s ease-out forwards;
+            transform-origin: top;
+            border-left: none;
+            padding-left: 4rem;
+            opacity: 1;
+            visibility: visible;
+            height: auto;
+            overflow: hidden;
+        }
+
+        #todoList li.completed:not(.show-completed) {
+            height: 0;
+            opacity: 0;
+            visibility: hidden;
+            margin: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .priority-indicator {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3rem;
+            background: var(--primary-color);
+            border-top-left-radius: var(--radius);
+            border-bottom-left-radius: var(--radius);
+            transition: var(--transition);
+        }
+
+        #todoList li[data-priority="high"] .priority-indicator {
+            background: var(--danger-color);
+        }
+
+        #todoList li[data-priority="medium"] .priority-indicator {
+            background: var(--warning-color);
+        }
+
+        #todoList li[data-priority="low"] .priority-indicator {
+            background: var(--success-color);
+        }
+
+        .completed .priority-indicator {
+            opacity: 0.5;
+        }
+
+        #todoList li:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .task-content {
+            flex: 1;
+            margin-right: 1.5rem;
+        }
+
+        .task-text {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .task-date {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .priority-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .tag {
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            background: var(--accent-color);
+            color: white;
+            font-weight: 500;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .action-btn.complete-btn {
+            background: var(--warning-color);
+        }
+
+        .action-btn.edit-btn {
+            background: var(--primary-color);
+        }
+
+        .action-btn.delete-btn {
+            background: var(--danger-color);
+        }
+
+        .action-btn:hover {
+            filter: brightness(110%);
+            transform: translateY(-1px);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 完了済みタスクのスタイル */
+        .completed {
+            background: color-mix(in srgb, var(--card-color) 95%, var(--success-color));
+        }
+
+        .completed .task-text {
+            color: var(--text-color);
+        }
+
+        .completed .complete-btn {
+            background: var(--success-color);
+        }
+
+        /* 今日期限のタスクのスタイル */
+        .due-today .task-date {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* タスクカウンターのスタイル更新 */
+        .task-count {
+            background: var(--card-color);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin-top: 2rem;
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .count-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            padding: 0.5rem;
+        }
+
+        .count-number {
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .count-item.due-today .count-number {
+            color: var(--primary-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-light);
+            background: var(--card-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+            padding: 0.8rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) rotateX(-10deg);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
+            }
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .celebrating {
+            animation: celebrate 0.5s ease;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .input-container, .toolbar {
+                padding: 1.5rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .priority-group {
+                grid-template-columns: 1fr;
+            }
+
+            #todoList li {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .task-content {
+                margin-right: 0;
+            }
+
+            .button-group {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .action-btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            select {
+                width: 100%;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .search-container {
+                width: 100%;
+            }
+
+            .filter-group {
+                width: 100%;
+                margin-left: 0;
+                flex-wrap: wrap;
+            }
+
+            select {
+                width: 100%;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>TODOリスト</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="input-container">
+            <div class="input-group">
+                <div class="input-field">
+                    <label class="input-label required-field">タスク名</label>
+                    <input type="text" id="taskInput" placeholder="新しいタスクを入力" required>
+                </div>
+                <div class="input-field">
+                    <label class="input-label required-field">期限</label>
+                    <input type="date" id="dateInput" required>
+                </div>
+            </div>
+            
+            <div class="input-field">
+                <label class="input-label required-field">優先度</label>
+                <div class="priority-group">
+                    <input type="radio" name="priority" value="high" id="highPriority" class="priority-radio" required>
+                    <label for="highPriority" class="priority-label">高</label>
+                    
+                    <input type="radio" name="priority" value="medium" id="mediumPriority" class="priority-radio">
+                    <label for="mediumPriority" class="priority-label">中</label>
+                    
+                    <input type="radio" name="priority" value="low" id="lowPriority" class="priority-radio">
+                    <label for="lowPriority" class="priority-label">低</label>
+                </div>
+            </div>
+
+            <div class="input-field">
+                <label class="input-label">タグ（カンマ区切り）</label>
+                <input type="text" id="tagInput" placeholder="例: 仕事, 個人, 買い物">
+            </div>
+
+            <div id="errorMessage" class="error-message">
+                タスク名、期限、優先度は必須項目です
+            </div>
+
+            <button class="add-btn" onclick="addTask()">
+                ＋ タスクを追加
+            </button>
+        </div>
+
+        <div class="toolbar">
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input" placeholder="タスクを検索...">
+            </div>
+            <div class="filter-group">
+                <select id="filterPriority">
+                    <option value="all">全ての優先度</option>
+                    <option value="high">高優先度</option>
+                    <option value="medium">中優先度</option>
+                    <option value="low">低優先度</option>
+                </select>
+                <select id="filterStatus">
+                    <option value="all">全てのステータス</option>
+                    <option value="completed">完了済み</option>
+                    <option value="active">未完了</option>
+                    <option value="expired">期限切れ</option>
+                </select>
+                <select id="sortBy">
+                    <option value="date">期限順</option>
+                    <option value="priority">優先度順</option>
+                    <option value="added">追加順</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+            <h2>タスクがありません</h2>
+            <p>新しいタスクを追加して、生産性を高めましょう！</p>
+        </div>
+
+        <ul id="todoList"></ul>
+        
+        <div class="task-count">
+            <div class="count-item">
+                総タスク数: <span id="totalTasks" class="count-number">0</span>
+            </div>
+            <div class="count-item">
+                未完了: <span id="activeTasks" class="count-number">0</span>
+            </div>
+            <div class="count-item">
+                完了済み: <span id="completedTasks" class="count-number">0</span>
+            </div>
+            <div class="count-item due-today">
+                今日期限: <span id="todayTasks" class="count-number">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // テーマの設定
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.textContent = isDark ? '🌙' : '☀️';
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        }
+
+        // 保存されたテーマを適用
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.body.setAttribute('data-theme', savedTheme);
+            document.querySelector('.theme-toggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // ドラッグ＆ドロップの実装
+        let draggedItem = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTasks();
+            updateEmptyState();
+            setupDragAndDrop();
+            setupSearch();
+            setupFilters();
+            
+            // 初期状態では完了タスクを非表示
+            document.querySelectorAll('#todoList li.completed').forEach(li => {
+                li.classList.remove('show-completed');
+            });
+        });
+
+        function setupDragAndDrop() {
+            const list = document.getElementById('todoList');
+            
+            list.addEventListener('dragstart', (e) => {
+                draggedItem = e.target;
+                e.target.style.opacity = '0.5';
+            });
+
+            list.addEventListener('dragend', (e) => {
+                e.target.style.opacity = '1';
+                draggedItem = null;
+            });
+
+            list.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const draggable = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    list.appendChild(draggedItem);
+                } else {
+                    list.insertBefore(draggedItem, afterElement);
+                }
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // 検索機能
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', filterTasks);
+        }
+
+        // フィルタリング機能
+        function setupFilters() {
+            document.getElementById('filterPriority').addEventListener('change', filterTasks);
+            document.getElementById('filterStatus').addEventListener('change', filterTasks);
+            document.getElementById('sortBy').addEventListener('change', sortTasks);
+        }
+
+        function filterTasks() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const priorityFilter = document.getElementById('filterPriority').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            
+            document.querySelectorAll('#todoList li').forEach(li => {
+                const text = li.querySelector('.task-text').textContent.toLowerCase();
+                const priority = li.getAttribute('data-priority');
+                const isCompleted = li.classList.contains('completed');
+                const isExpired = li.classList.contains('expired');
+                
+                const matchesSearch = text.includes(searchTerm);
+                const matchesPriority = priorityFilter === 'all' || priority === priorityFilter;
+                const matchesStatus = statusFilter === 'all' ||
+                    (statusFilter === 'completed' && isCompleted) ||
+                    (statusFilter === 'active' && !isCompleted) ||
+                    (statusFilter === 'expired' && isExpired);
+
+                // 表示状態の更新
+                if (matchesSearch && matchesPriority && matchesStatus) {
+                    li.style.display = '';
+                    if (isCompleted) {
+                        li.classList.add('show-completed');
+                    }
+                } else {
+                    li.style.display = 'none';
+                    if (isCompleted) {
+                        li.classList.remove('show-completed');
+                    }
+                }
+            });
+
+            updateEmptyState();
+        }
+
+        function sortTasks() {
+            const sortBy = document.getElementById('sortBy').value;
+            const list = document.getElementById('todoList');
+            const items = Array.from(list.children);
+            
+            items.sort((a, b) => {
+                if (sortBy === 'date') {
+                    const dateA = a.querySelector('.task-date')?.textContent || '';
+                    const dateB = b.querySelector('.task-date')?.textContent || '';
+                    return new Date(dateA) - new Date(dateB);
+                } else if (sortBy === 'priority') {
+                    const priorityOrder = { high: 3, medium: 2, low: 1 };
+                    const priorityA = priorityOrder[a.getAttribute('data-priority')];
+                    const priorityB = priorityOrder[b.getAttribute('data-priority')];
+                    return priorityB - priorityA;
+                }
+                return 0;
+            });
+            
+            items.forEach(item => list.appendChild(item));
+        }
+
+        function createTaskElement(taskText, dueDate, priority, tags = [], completed = false) {
+            const list = document.getElementById('todoList');
+            const li = document.createElement('li');
+            
+            li.setAttribute('draggable', true);
+            li.setAttribute('data-priority', priority);
+            
+            if (completed) li.classList.add('completed');
+            if (dueDate && new Date(dueDate) < new Date().setHours(0, 0, 0, 0)) {
+                li.classList.add('expired');
+            }
+            
+            // 今日期限のタスクにクラスを追加
+            if (dueDate) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const taskDate = new Date(dueDate);
+                taskDate.setHours(0, 0, 0, 0);
+                if (taskDate.getTime() === today.getTime()) {
+                    li.classList.add('due-today');
+                }
+            }
+            
+            const tagsHtml = tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+            
+            li.innerHTML = `
+                <div class="priority-indicator"></div>
+                <div class="task-content">
+                    <div class="task-text">${taskText}</div>
+                    ${dueDate ? `<div class="task-date">📅 ${formatDate(dueDate)}</div>` : ''}
+                    <div class="task-meta">
+                        ${tagsHtml}
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="action-btn complete-btn" onclick="toggleComplete(this)">
+                        ${completed ? '✓ 完了済' : '○ 完了'}
+                    </button>
+                    <button class="action-btn edit-btn" onclick="editTask(this)">
+                        ✎ 編集
+                    </button>
+                    <button class="action-btn delete-btn" onclick="deleteTask(this)">
+                        × 削除
+                    </button>
+                </div>
+            `;
+            
+            list.appendChild(li);
+            updateTaskCount();
+            updateEmptyState();
+        }
+
+        function toggleComplete(button) {
+            const li = button.closest('li');
+            li.classList.add('completed');
+            
+            // 完了アニメーション
+            li.classList.add('celebrating');
+            setTimeout(() => {
+                li.classList.remove('celebrating');
+                // アニメーション後に非表示
+                if (document.getElementById('filterStatus').value !== 'completed') {
+                    li.classList.remove('show-completed');
+                }
+            }, 500);
+            
+            const completeBtn = li.querySelector('.complete-btn');
+            completeBtn.innerHTML = '✓ 完了済';
+            
+            saveTasks();
+            updateTaskCount();
+            filterTasks();
+        }
+
+        function editTask(button) {
+            const li = button.closest('li');
+            const taskContent = li.querySelector('.task-content');
+            const taskText = li.querySelector('.task-text').textContent;
+            const taskDate = li.querySelector('.task-date');
+            const priority = li.getAttribute('data-priority');
+            const tags = Array.from(li.querySelectorAll('.tag')).map(tag => tag.textContent);
+            
+            const currentDate = taskDate ? taskDate.textContent.replace('📅 ', '') : '';
+            const formattedDate = currentDate ? new Date(currentDate).toISOString().split('T')[0] : '';
+            
+            taskContent.innerHTML = `
+                <input type="text" class="edit-text" value="${taskText}">
+                <input type="date" class="edit-date" value="${formattedDate}">
+                <select class="edit-priority">
+                    <option value="low" ${priority === 'low' ? 'selected' : ''}>優先度: 低</option>
+                    <option value="medium" ${priority === 'medium' ? 'selected' : ''}>優先度: 中</option>
+                    <option value="high" ${priority === 'high' ? 'selected' : ''}>優先度: 高</option>
+                </select>
+                <input type="text" class="edit-tags" value="${tags.join(', ')}">
+                <button onclick="saveEdit(this)">保存</button>
+            `;
+            li.classList.add('edit-mode');
+        }
+
+        function saveEdit(button) {
+            const li = button.closest('li');
+            const newText = li.querySelector('.edit-text').value.trim();
+            const newDate = li.querySelector('.edit-date').value;
+            const newPriority = li.querySelector('.edit-priority').value;
+            const newTags = li.querySelector('.edit-tags').value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+            
+            if (!newText || !newDate || !newPriority) {
+                alert('タスク名、期限、優先度は必須項目です');
+                return;
+            }
+            
+            li.setAttribute('data-priority', newPriority);
+            const taskContent = li.querySelector('.task-content');
+            const tagsHtml = newTags.map(tag => `<span class="tag">${tag}</span>`).join('');
+            
+            taskContent.innerHTML = `
+                <div class="task-text">${newText}</div>
+                ${newDate ? `<div class="task-date">📅 ${formatDate(newDate)}</div>` : ''}
+                <div class="task-meta">
+                    ${tagsHtml}
+                </div>
+            `;
+            li.classList.remove('edit-mode');
+            
+            if (newDate && new Date(newDate) < new Date().setHours(0, 0, 0, 0)) {
+                li.classList.add('expired');
+            } else {
+                li.classList.remove('expired');
+            }
+            
+            saveTasks();
+            filterTasks();
+        }
+
+        function deleteTask(button) {
+            const li = button.closest('li');
+            li.style.opacity = '0';
+            li.style.transform = 'translateY(20px) rotateX(-30deg)';
+            li.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                li.remove();
+                saveTasks();
+                updateTaskCount();
+                updateEmptyState();
+            }, 300);
+        }
+
+        function saveTasks() {
+            const tasks = [];
+            document.querySelectorAll('#todoList li').forEach(li => {
+                const taskText = li.querySelector('.task-text').textContent;
+                const taskDate = li.querySelector('.task-date');
+                const dueDate = taskDate ? taskDate.textContent.replace('📅 ', '') : '';
+                const priority = li.getAttribute('data-priority');
+                const tags = Array.from(li.querySelectorAll('.tag')).map(tag => tag.textContent);
+                const completed = li.classList.contains('completed');
+                
+                tasks.push({
+                    text: taskText,
+                    dueDate: dueDate,
+                    priority: priority,
+                    tags: tags,
+                    completed: completed
+                });
+            });
+            localStorage.setItem('todos', JSON.stringify(tasks));
+        }
+
+        function loadTasks() {
+            const savedTasks = localStorage.getItem('todos');
+            if (savedTasks) {
+                const tasks = JSON.parse(savedTasks);
+                tasks.forEach(task => {
+                    createTaskElement(task.text, task.dueDate, task.priority, task.tags, task.completed);
+                });
+            }
+        }
+
+        function updateTaskCount() {
+            const total = document.querySelectorAll('#todoList li').length;
+            const completed = document.querySelectorAll('#todoList li.completed').length;
+            const active = total - completed;
+            
+            // 今日の日付を取得
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // 今日期限のタスク数をカウント
+            const todayTasks = Array.from(document.querySelectorAll('#todoList li')).filter(li => {
+                const dateText = li.querySelector('.task-date')?.textContent.replace('📅 ', '');
+                if (!dateText) return false;
+                const taskDate = new Date(dateText);
+                taskDate.setHours(0, 0, 0, 0);
+                return taskDate.getTime() === today.getTime();
+            }).length;
+            
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('activeTasks').textContent = active;
+            document.getElementById('completedTasks').textContent = completed;
+            document.getElementById('todayTasks').textContent = todayTasks;
+        }
+
+        function updateEmptyState() {
+            const emptyState = document.getElementById('emptyState');
+            const visibleTasks = Array.from(document.querySelectorAll('#todoList li')).filter(li => {
+                return li.style.display !== 'none' && 
+                       (!li.classList.contains('completed') || li.classList.contains('show-completed'));
+            }).length;
+            
+            emptyState.style.display = visibleTasks === 0 ? 'block' : 'none';
+            
+            // フィルター状態に応じてメッセージを変更
+            const statusFilter = document.getElementById('filterStatus').value;
+            const priorityFilter = document.getElementById('filterPriority').value;
+            
+            let message = '';
+            if (statusFilter === 'completed') {
+                message = '完了したタスクはありません';
+            } else if (statusFilter === 'active') {
+                message = '未完了のタスクはありません';
+            } else if (priorityFilter !== 'all') {
+                message = `${priorityFilter}優先度のタスクはありません`;
+            } else {
+                message = '新しいタスクを追加して、生産性を高めましょう！';
+            }
+            
+            emptyState.querySelector('p').textContent = message;
+        }
+
+        document.getElementById('taskInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // 期限切れのタスクを定期的にチェック
+        setInterval(() => {
+            document.querySelectorAll('#todoList li').forEach(li => {
+                const dateElement = li.querySelector('.task-date');
+                if (dateElement) {
+                    const dateText = dateElement.textContent.replace('📅 ', '');
+                    if (new Date(dateText) < new Date().setHours(0, 0, 0, 0)) {
+                        li.classList.add('expired');
+                    }
+                }
+            });
+        }, 60000); // 1分ごとにチェック
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const dateInput = document.getElementById('dateInput');
+            const priorityInputs = document.querySelectorAll('input[name="priority"]');
+            const tagInput = document.getElementById('tagInput');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            const taskText = input.value.trim();
+            const dueDate = dateInput.value;
+            const priority = Array.from(priorityInputs).find(input => input.checked)?.value;
+            const tags = tagInput.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+            
+            // 必須項目のバリデーション
+            if (!taskText || !dueDate || !priority) {
+                errorMessage.classList.add('visible');
+                return;
+            }
+            
+            errorMessage.classList.remove('visible');
+            createTaskElement(taskText, dueDate, priority, tags);
+            saveTasks();
+            
+            // フォームのリセット
+            input.value = '';
+            dateInput.value = '';
+            priorityInputs.forEach(input => input.checked = false);
+            tagInput.value = '';
+            filterTasks();
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+    </script>
+</body>
+</html> 
